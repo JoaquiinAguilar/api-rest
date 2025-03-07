@@ -1,0 +1,209 @@
+{% extends "personas/base.html" %}
+
+{% block title %}Registro - Paso 3: Huella Digital{% endblock %}
+
+{% block header %}Registro de Nueva Persona - Paso 3: Huella Digital{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">Paso 3</div>
+                </div>
+                <h5 class="card-title">Captura de Huella Digital</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'registro_paso3' %}" enctype="multipart/form-data" id="formPaso3">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-fingerprint me-2"></i>
+                                    <strong>Instrucciones:</strong>
+                                    <ol>
+                                        <li>Prepare el lector de huellas digitales.</li>
+                                        <li>Coloque el dedo índice en el lector.</li>
+                                        <li>Suba la imagen capturada o use el botón "Capturar Huella" si el dispositivo está conectado.</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="huella" class="form-label">Seleccionar archivo de huella digital</label>
+                                    <input type="file" class="form-control" id="huella" name="huella" accept="image/*" required>
+                                    <div class="form-text">Formatos aceptados: JPG, PNG</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <button type="button" id="btnCapturarHuella" class="btn btn-primary w-100">
+                                        <i class="fas fa-fingerprint me-2"></i>Capturar Huella con Lector
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Vista previa</label>
+                                <div class="border rounded p-2 d-flex justify-content-center align-items-center bg-light" style="min-height: 200px;">
+                                    <img id="preview" src="#" alt="Vista previa de huella" style="max-width: 100%; max-height: 200px; display: none;">
+                                    <div id="noPreview" class="text-center text-muted">
+                                        <i class="fas fa-fingerprint fa-5x mb-2"></i><br>
+                                        Sin huella capturada
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="infoHuella" class="alert alert-success" style="display: none;">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span>Huella digital capturada correctamente.</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'registro_paso2' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Anterior
+                        </a>
+                        <button type="submit" class="btn btn-success" id="btnFinalizar">
+                            <i class="fas fa-check me-2"></i>Finalizar Registro
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="confirmacionModal" tabindex="-1" aria-labelledby="confirmacionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="confirmacionModalLabel">Confirmación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-check-circle text-success fa-4x"></i>
+                </div>
+                <p>¿Está seguro de finalizar el registro con los datos proporcionados?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btnConfirmarFinalizacion">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputHuella = document.getElementById('huella');
+        const preview = document.getElementById('preview');
+        const noPreview = document.getElementById('noPreview');
+        const infoHuella = document.getElementById('infoHuella');
+        const btnCapturarHuella = document.getElementById('btnCapturarHuella');
+        const formPaso3 = document.getElementById('formPaso3');
+        const confirmacionModal = new bootstrap.Modal(document.getElementById('confirmacionModal'));
+        const btnConfirmarFinalizacion = document.getElementById('btnConfirmarFinalizacion');
+        
+        // Vista previa de huella seleccionada
+        inputHuella.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    noPreview.style.display = 'none';
+                    infoHuella.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+                noPreview.style.display = 'block';
+                infoHuella.style.display = 'none';
+            }
+        });
+        
+        // Simular captura de huella con lector
+        btnCapturarHuella.addEventListener('click', function() {
+            // Aquí se implementaría la integración con el lector real de huellas
+            // Por ahora, simulamos una respuesta exitosa
+            capturarHuellaSimulada();
+        });
+        
+        function capturarHuellaSimulada() {
+            btnCapturarHuella.disabled = true;
+            btnCapturarHuella.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Capturando...';
+            
+            // Simulamos un tiempo de captura
+            setTimeout(function() {
+                btnCapturarHuella.innerHTML = '<i class="fas fa-fingerprint me-2"></i>Capturar Huella con Lector';
+                btnCapturarHuella.disabled = false;
+                
+                // URL de una imagen de huella de ejemplo (en producción sería la imagen real capturada)
+                fetch('/static/img/fingerprint-example.png')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('No se pudo cargar la imagen de ejemplo');
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        // Crear un objeto File a partir del Blob
+                        const file = new File([blob], "huella_capturada.png", { type: "image/png" });
+                        
+                        // Crear un nuevo objeto FileList para el input de archivo
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        inputHuella.files = dataTransfer.files;
+                        
+                        // Disparar el evento change para mostrar la vista previa
+                        const event = new Event('change', { bubbles: true });
+                        inputHuella.dispatchEvent(event);
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar huella de ejemplo:', error);
+                        alert('Error al capturar huella. Por favor, suba un archivo manualmente.');
+                    });
+            }, 2000);
+        }
+        
+        // Mostrar modal de confirmación antes de enviar
+        document.getElementById('btnFinalizar').addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            // Verificar si se ha seleccionado una huella
+            if (inputHuella.files.length === 0) {
+                alert('Por favor, seleccione o capture una huella digital antes de continuar.');
+                return;
+            }
+            
+            confirmacionModal.show();
+        });
+        
+        // Enviar formulario desde el modal
+        btnConfirmarFinalizacion.addEventListener('click', function() {
+            confirmacionModal.hide();
+            formPaso3.submit();
+        });
+        
+        // Comunicación con la API del lector de huellas
+        function conectarConLectorHuellas() {
+            // Esta función se conectaría con la API real del lector de huellas
+            // Implementación real dependería del dispositivo y API específicos
+            console.log("Conectando con lector de huellas...");
+        }
+        
+        // Intenta conectar al cargar la página
+        conectarConLectorHuellas();
+    });
+</script>
+{% endblock %}

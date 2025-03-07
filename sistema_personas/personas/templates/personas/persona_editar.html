@@ -1,0 +1,117 @@
+{% extends "personas/base.html" %}
+
+{% block title %}Editar Persona - {{ persona.nombre }} {{ persona.apellidos }}{% endblock %}
+
+{% block header %}Editar Persona{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>Editar Información de Persona
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="id_nombre" name="nombre" value="{{ persona.nombre }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_apellidos" class="form-label">Apellidos <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="id_apellidos" name="apellidos" value="{{ persona.apellidos }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Sexo <span class="text-danger">*</span></label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="sexo" id="id_sexo_0" value="False" {% if not persona.sexo %}checked{% endif %} required>
+                                <label class="form-check-label" for="id_sexo_0">
+                                    Mujer
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="sexo" id="id_sexo_1" value="True" {% if persona.sexo %}checked{% endif %} required>
+                                <label class="form-check-label" for="id_sexo_1">
+                                    Hombre
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_telefono" class="form-label">Número de Teléfono <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control" id="id_telefono" name="telefono" value="{{ persona.telefono }}" required
+                                   pattern="[0-9]{10}" title="Ingrese un número de teléfono válido de 10 dígitos">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_correo" class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="id_correo" name="correo" value="{{ persona.correo }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_direccion" class="form-label">Dirección <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="id_direccion" name="direccion" rows="3" required>{{ persona.direccion }}</textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="id_foto" class="form-label">Fotografía (Opcional)</label>
+                            <input type="file" class="form-control" id="id_foto" name="foto" accept="image/*">
+                            <div class="form-text">Deje en blanco para mantener la foto actual.</div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            {% if persona.foto %}
+                            <label class="form-label">Foto Actual</label>
+                            <div>
+                                <img src="{{ persona.foto.url }}" alt="Foto actual" class="img-thumbnail" style="max-height: 100px;">
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> Para cambiar la huella digital o el código QR, debe realizar un nuevo registro.
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'persona_detalle' persona.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Vista previa de la nueva foto
+        const inputFoto = document.getElementById('id_foto');
+        
+        if (inputFoto) {
+            inputFoto.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    // Aquí podría implementarse código para mostrar una vista previa de la nueva foto
+                    console.log('Nueva foto seleccionada:', file.name);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

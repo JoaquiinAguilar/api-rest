@@ -1,0 +1,205 @@
+{% extends "personas/base.html" %}
+
+{% block title %}Registro - Paso 2: Fotografía{% endblock %}
+
+{% block header %}Registro de Nueva Persona - Paso 2: Fotografía{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 66%" aria-valuenow="66" aria-valuemin="0" aria-valuemax="100">Paso 2</div>
+                </div>
+                <h5 class="card-title">Fotografía</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'registro_paso2' %}" enctype="multipart/form-data" id="formPaso2">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label class="form-label">Seleccionar método de captura</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="metodoFoto" id="metodoArchivo" value="archivo" checked>
+                                    <label class="form-check-label" for="metodoArchivo">
+                                        <i class="fas fa-file-upload me-2"></i>Subir archivo
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="metodoFoto" id="metodoCamara" value="camara">
+                                    <label class="form-check-label" for="metodoCamara">
+                                        <i class="fas fa-camera me-2"></i>Usar cámara
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="divArchivo" class="mb-3">
+                                <label for="foto" class="form-label">Seleccionar archivo de imagen</label>
+                                <input type="file" class="form-control" id="foto" name="foto" accept="image/*">
+                                <div class="form-text">Formatos aceptados: JPG, PNG</div>
+                            </div>
+                            
+                            <div id="divCamara" class="mb-3" style="display: none;">
+                                <button type="button" id="btnIniciarCamara" class="btn btn-outline-primary mb-2">
+                                    <i class="fas fa-video me-2"></i>Iniciar cámara
+                                </button>
+                                <button type="button" id="btnCapturar" class="btn btn-success mb-2" style="display: none;">
+                                    <i class="fas fa-camera me-2"></i>Capturar
+                                </button>
+                                <div class="form-text mb-2">Colóquese frente a la cámara y capture su imagen.</div>
+                                <video id="video" width="100%" height="auto" style="display: none;"></video>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 text-center">
+                            <div class="mb-3">
+                                <label class="form-label">Vista previa</label>
+                                <div class="border rounded p-2 d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                                    <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 200px; display: none;">
+                                    <canvas id="canvas" style="display: none;"></canvas>
+                                    <span id="noPreview" class="text-muted">
+                                        <i class="fas fa-user fa-5x"></i><br>
+                                        Sin imagen
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="foto_base64" id="foto_base64">
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Por favor, asegúrese de que la fotografía muestre claramente el rostro de la persona.
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'registro_paso1' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Anterior
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="btnSiguiente">
+                            Siguiente<i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const metodoArchivo = document.getElementById('metodoArchivo');
+        const metodoCamara = document.getElementById('metodoCamara');
+        const divArchivo = document.getElementById('divArchivo');
+        const divCamara = document.getElementById('divCamara');
+        const btnIniciarCamara = document.getElementById('btnIniciarCamara');
+        const btnCapturar = document.getElementById('btnCapturar');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const foto_base64 = document.getElementById('foto_base64');
+        const preview = document.getElementById('preview');
+        const noPreview = document.getElementById('noPreview');
+        const inputFoto = document.getElementById('foto');
+
+        // Cambiar entre métodos de captura
+        metodoArchivo.addEventListener('change', function() {
+            if (this.checked) {
+                divArchivo.style.display = 'block';
+                divCamara.style.display = 'none';
+                detenerCamara();
+            }
+        });
+
+        metodoCamara.addEventListener('change', function() {
+            if (this.checked) {
+                divArchivo.style.display = 'none';
+                divCamara.style.display = 'block';
+            }
+        });
+
+        // Vista previa de archivo seleccionado
+        inputFoto.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    canvas.style.display = 'none';
+                    noPreview.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+                canvas.style.display = 'none';
+                noPreview.style.display = 'block';
+            }
+        });
+
+        // Iniciar cámara
+        btnIniciarCamara.addEventListener('click', function() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        video.play();
+                        video.style.display = 'block';
+                        btnCapturar.style.display = 'inline-block';
+                        btnIniciarCamara.disabled = true;
+                    })
+                    .catch(function(error) {
+                        console.error("Error al acceder a la cámara: ", error);
+                        alert("No se pudo acceder a la cámara. Por favor, verifique los permisos o intente con otro método.");
+                    });
+            } else {
+                alert("Su navegador no soporta acceso a la cámara.");
+            }
+        });
+
+        // Capturar foto
+        btnCapturar.addEventListener('click', function() {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const data = canvas.toDataURL('image/png');
+            foto_base64.value = data;
+            
+            video.style.display = 'none';
+            canvas.style.display = 'block';
+            preview.style.display = 'none';
+            noPreview.style.display = 'none';
+            
+            detenerCamara();
+        });
+
+        // Detener la cámara
+        function detenerCamara() {
+            if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+                btnIniciarCamara.disabled = false;
+                btnCapturar.style.display = 'none';
+            }
+        }
+
+        // Validación del formulario
+        document.getElementById('formPaso2').addEventListener('submit', function(event) {
+            const archivoSeleccionado = inputFoto.files && inputFoto.files[0];
+            const fotoCapturada = foto_base64.value;
+            
+            if (!archivoSeleccionado && !fotoCapturada) {
+                event.preventDefault();
+                alert("Por favor seleccione una imagen o capture una foto con la cámara.");
+            }
+        });
+    });
+</script>
+{% endblock %}

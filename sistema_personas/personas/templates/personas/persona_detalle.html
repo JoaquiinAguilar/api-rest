@@ -1,0 +1,148 @@
+{% extends "personas/base.html" %}
+
+{% block title %}Detalle de Persona - {{ persona.nombre }} {{ persona.apellidos }}{% endblock %}
+
+{% block header %}Detalle de Persona{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Información Completa
+                </h5>
+                <div>
+                    <a href="{% url 'persona_editar' persona.id %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-edit me-1"></i>Editar
+                    </a>
+                    <a href="{% url 'persona_eliminar' persona.id %}" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash me-1"></i>Eliminar
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="mb-4">
+                            {% if persona.foto %}
+                            <img src="{{ persona.foto.url }}" alt="Foto de {{ persona.nombre }}" class="img-thumbnail mb-3" style="max-height: 200px;">
+                            {% else %}
+                            <div class="border rounded p-3 bg-light mb-3">
+                                <i class="fas fa-user fa-5x text-secondary"></i>
+                                <p class="text-muted mt-2">No hay foto disponible</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Código QR</h6>
+                            {% if persona.qr_code %}
+                            <img src="{{ persona.qr_code.url }}" alt="Código QR" class="img-thumbnail mb-3" style="max-height: 150px;">
+                            {% else %}
+                            <div class="border rounded p-3 bg-light mb-3">
+                                <i class="fas fa-qrcode fa-3x text-secondary"></i>
+                                <p class="text-muted mt-2">No hay código QR disponible</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Huella Digital</h6>
+                            {% if persona.huella_digital %}
+                            <img src="{{ persona.huella_digital.url }}" alt="Huella Digital" class="img-thumbnail mb-3" style="max-height: 150px;">
+                            {% else %}
+                            <div class="border rounded p-3 bg-light mb-3">
+                                <i class="fas fa-fingerprint fa-3x text-secondary"></i>
+                                <p class="text-muted mt-2">No hay huella digital disponible</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <h3 class="mb-3">{{ persona.nombre }} {{ persona.apellidos }}</h3>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0"><i class="fas fa-id-card me-2"></i>Datos Personales</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th width="40%">ID:</th>
+                                                <td>{{ persona.id }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Sexo:</th>
+                                                <td>{% if persona.sexo %}Hombre{% else %}Mujer{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Teléfono:</th>
+                                                <td>{{ persona.telefono }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Correo:</th>
+                                                <td>{{ persona.correo }}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Fechas</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th width="40%">Registrado:</th>
+                                                <td>{{ persona.fecha_registro|date:"d/m/Y H:i" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Actualizado:</th>
+                                                <td>{{ persona.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Dirección</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>{{ persona.direccion }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-fingerprint me-2"></i>Información Biométrica</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Hash SHA-256 de Huella Digital:</label>
+                                    <div class="border p-2 bg-light">
+                                        <code class="user-select-all">{{ persona.huella_hex }}</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'lista_personas' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a la Lista
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

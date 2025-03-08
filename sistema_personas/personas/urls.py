@@ -27,4 +27,8 @@ urlpatterns = [
     
     # Endpoint para capturar huella
     path('api/capturar-huella/', views.capturar_huella, name='capturar_huella'),
+
+    # Rutas para roles
+    path('roles/crear/', views.create_rank, name='crear_rol'),
+    path('roles/editar/<int:pk>/', views.edit_rank, name='editar_rol'),
 ]

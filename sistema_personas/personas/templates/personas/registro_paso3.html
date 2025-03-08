@@ -1,8 +1,8 @@
 {% extends "personas/base.html" %}
 
-{% block title %}Registro - Paso 3: Huella Digital{% endblock %}
+{% block title %}Registro - Paso 3: Huella Digital y Rol{% endblock %}
 
-{% block header %}Registro de Nueva Persona - Paso 3: Huella Digital{% endblock %}
+{% block header %}Registro de Nueva Persona - Paso 3: Huella Digital y Rol{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -12,7 +12,7 @@
                 <div class="progress mb-3">
                     <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">Paso 3</div>
                 </div>
-                <h5 class="card-title">Captura de Huella Digital</h5>
+                <h5 class="card-title">Captura de Huella Digital y Asignación de Rol</h5>
             </div>
             <div class="card-body">
                 <form method="post" action="{% url 'registro_paso3' %}" enctype="multipart/form-data" id="formPaso3">
@@ -20,6 +20,7 @@
                     
                     <div class="row">
                         <div class="col-md-6">
+                            <!-- Sección de huella digital -->
                             <div class="mb-4">
                                 <div class="alert alert-info">
                                     <i class="fas fa-fingerprint me-2"></i>
@@ -46,6 +47,7 @@
                         </div>
                         
                         <div class="col-md-6">
+                            <!-- Vista previa de la huella -->
                             <div class="mb-3">
                                 <label class="form-label">Vista previa</label>
                                 <div class="border rounded p-2 d-flex justify-content-center align-items-center bg-light" style="min-height: 200px;">
@@ -62,6 +64,18 @@
                                 <span>Huella digital capturada correctamente.</span>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Sección de selección de rol -->
+                    <div class="mb-4">
+                        <label for="rol" class="form-label">Asignar Rol <span class="text-danger">*</span></label>
+                        <select class="form-select" id="rol" name="rol" required>
+                            <option value="">Seleccione un rol</option>
+                            {% for rank in ranks %}
+                                <option value="{{ rank.id }}">{{ rank.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Seleccione el rol que tendrá la persona en el sistema.</div>
                     </div>
                     
                     <div class="d-flex justify-content-between mt-4">

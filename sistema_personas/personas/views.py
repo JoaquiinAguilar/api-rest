@@ -8,6 +8,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from django.contrib.auth.models import User
 
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
@@ -19,9 +20,10 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-from .models import Persona
+from .models import Persona, Rank, UserProfile
 from .serializers import PersonaSerializer, PersonaListSerializer
 from .biometrics import process_fingerprint, compare_fingerprint
+from .forms import RankForm
 
 # Create your views here.
 
@@ -151,8 +153,22 @@ def registro_paso3(request):
             # Procesar huella digital
             huella_hex, qr_image = process_fingerprint(huella)
             
-            # Crear persona con todos los datos
+            # Obtener datos de la sesión
             datos_persona = request.session['registro_persona']
+            
+            # Crear usuario
+            user = User.objects.create_user(
+                username=datos_persona['correo'],  # Usar el correo como nombre de usuario
+                email=datos_persona['correo'],
+                password='password_temporal'  # Puedes generar una contraseña temporal
+            )
+            
+            # Asignar rol al usuario
+            rank_id = request.POST.get('rol')
+            rank = Rank.objects.get(id=rank_id)
+            UserProfile.objects.create(user=user, rank=rank)
+            
+            # Crear persona con todos los datos
             persona = Persona(
                 nombre=datos_persona['nombre'],
                 apellidos=datos_persona['apellidos'],
@@ -181,7 +197,9 @@ def registro_paso3(request):
             
             return redirect('lista_personas')
     
-    return render(request, 'personas/registro_paso3.html')
+    # Obtener todos los roles para mostrar en el formulario
+    ranks = Rank.objects.all()
+    return render(request, 'personas/registro_paso3.html', {'ranks': ranks})
 
 @login_required
 def busqueda_huella(request):
@@ -239,3 +257,25 @@ def capturar_huella(request):
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+# Vistas para roles
+def create_rank(request):
+    if request.method == 'POST':
+        form = RankForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_roles')
+    else:
+        form = RankForm()
+    return render(request, 'personas/create_rank.html', {'form': form})
+
+def edit_rank(request, pk):
+    rank = get_object_or_404(Rank, pk=pk)
+    if request.method == 'POST':
+        form = RankForm(request.POST, instance=rank)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_roles')
+    else:
+        form = RankForm(instance=rank)
+    return render(request, 'personas/edit_rank.html', {'form': form})

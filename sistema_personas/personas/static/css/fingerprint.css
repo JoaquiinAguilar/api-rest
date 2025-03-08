@@ -1,0 +1,117 @@
+/* Estilos para la captura de huellas digitales */
+
+#fingerprint-image-container {
+    width: 100%;
+    height: 280px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+#imagediv {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#preview {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+#noPreview {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #6c757d;
+}
+
+#scanQualityDiv {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+#qualityInputBox {
+    background-color: #f8f9fa;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Estilos para mostrar el estado de calidad */
+#qualityInputBox.good {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+#qualityInputBox.bad {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+#qualityInputBox.medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Animaciones para el estado de captura */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.capturing {
+    animation: pulse 1.5s infinite;
+}
+
+/* Estilo para el botón de captura activo */
+#btnStartCapture:disabled,
+#btnStopCapture:disabled {
+    cursor: not-allowed;
+}
+
+#btnStartCapture:not(:disabled) {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+#btnStopCapture:not(:disabled) {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Estilos para mensajes de estado */
+#status, #captureStatus {
+    transition: all 0.3s ease-in-out;
+}
+
+#captureStatus.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+#captureStatus.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+#captureStatus.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    color: #856404;
+}
+
+#captureStatus.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}

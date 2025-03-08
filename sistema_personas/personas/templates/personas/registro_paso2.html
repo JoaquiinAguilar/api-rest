@@ -15,6 +15,12 @@
                 <h5 class="card-title">Fotografía</h5>
             </div>
             <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+                </div>
+                {% endif %}
+                
                 <form method="post" action="{% url 'registro_paso2' %}" enctype="multipart/form-data" id="formPaso2">
                     {% csrf_token %}
                     

@@ -14,5 +14,5 @@ Funcionalidades:
 según el avance en la captura.
 
 
-# Como hacerlo funcionar?
+# ¿Como hacerlo funcionar?
 Leer installation.md

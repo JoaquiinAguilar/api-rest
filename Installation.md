@@ -1,6 +1,5 @@
 ## Steps to run project with the traditional method
 
-# este es un ejemplo, ir complementando
 
 1. Clone the repo
     ```sh
@@ -20,10 +19,12 @@
     `pip install --upgrade pip`
 6. Install libraries
     `pip install -r requirements.txt --no-cache`
-7. Create file .env inside **** folder, copy the content from **.env.example** and change the database connection values
-8. Run migrations: `python manage.py makemigrations`
+7. Run migrations: `python manage.py makemigrations`
                    `python manage.py migrate`
-9. Execute python project
+8. Execute python project
     `python manage.py runserver`
-10. Go to the explorer and navigate to `http://127.0.0.1:8000/`
-11. Ready to go!
+9. Go to the explorer and navigate to `http://127.0.0.1:8000/`
+10. Ready to go!
+
+
+# Docker is on the line soon!

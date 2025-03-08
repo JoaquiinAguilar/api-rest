@@ -16,7 +16,7 @@ urlpatterns = [
     path('personas/<int:pk>/', views.PersonaDetailView.as_view(), name='persona_detalle'),
     path('personas/<int:pk>/editar/', views.PersonaUpdateView.as_view(), name='persona_editar'),
     path('personas/<int:pk>/eliminar/', views.PersonaDeleteView.as_view(), name='persona_eliminar'),
-    
+       
     # Registro paso a paso
     path('registro/paso1/', views.registro_paso1, name='registro_paso1'),
     path('registro/paso2/', views.registro_paso2, name='registro_paso2'),

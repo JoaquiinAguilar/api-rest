@@ -118,29 +118,80 @@ def registro_paso1(request):
 
 @login_required
 def registro_paso2(request):
+    """
+    Vista para el paso 2 del registro: Captura de fotografía.
+    Guarda la imagen ya sea cargada o capturada con la cámara.
+    """
     if 'registro_persona' not in request.session:
         return redirect('registro_paso1')
     
     if request.method == 'POST':
-        if 'foto' in request.FILES:
-            # Guardar foto temporalmente
-            foto = request.FILES['foto']
-            foto_path = default_storage.save(f'temp/foto_{request.user.id}.png', ContentFile(foto.read()))
-            request.session['registro_persona']['foto_path'] = foto_path
+        foto_guardada = False
         
-        if request.POST.get('foto_base64'):
-            # Si se capturó con la cámara
-            img_data = request.POST.get('foto_base64').split(',')[1]
-            img = Image.open(BytesIO(base64.b64decode(img_data)))
-            buffer = BytesIO()
-            img.save(buffer, format="PNG")
-            foto_path = default_storage.save(f'temp/foto_{request.user.id}.png', ContentFile(buffer.getvalue()))
-            request.session['registro_persona']['foto_path'] = foto_path
+        # Verificar si se ha cargado un archivo
+        if 'foto' in request.FILES and request.FILES['foto']:
+            try:
+                # Guardar foto directamente en la carpeta fotos (no en temp)
+                import os
+                from django.conf import settings
+                
+                # Asegurarse de que el directorio existe
+                os.makedirs(os.path.join(settings.MEDIA_ROOT, 'fotos'), exist_ok=True)
+                
+                foto = request.FILES['foto']
+                foto_content = foto.read()
+                
+                # Guardar en fotos/ con un nombre único
+                foto_path = default_storage.save(f'fotos/foto_{request.user.id}_{foto.name}', ContentFile(foto_content))
+                request.session['registro_persona']['foto_path'] = foto_path
+                foto_guardada = True
+                print(f"Foto guardada desde archivo: {foto_path}")
+            except Exception as e:
+                print(f"Error al guardar la foto desde archivo: {str(e)}")
+                return render(request, 'personas/registro_paso2.html', {
+                    'error': f'Error al procesar la imagen: {str(e)}'
+                })
         
-        return redirect('registro_paso3')
+        # Verificar si se ha capturado una foto con la cámara
+        elif request.POST.get('foto_base64'):
+            try:
+                # Si se capturó con la cámara
+                img_data = request.POST.get('foto_base64').split(',')[1]
+                img_binary = base64.b64decode(img_data)
+                
+                # Asegurarse de que el directorio existe
+                import os
+                from django.conf import settings
+                os.makedirs(os.path.join(settings.MEDIA_ROOT, 'fotos'), exist_ok=True)
+                
+                # Guardar la imagen decodificada directamente en fotos/ (no en temp)
+                import uuid
+                foto_path = default_storage.save(f'fotos/foto_{request.user.id}_{uuid.uuid4()}.png', ContentFile(img_binary))
+                request.session['registro_persona']['foto_path'] = foto_path
+                foto_guardada = True
+                print(f"Foto guardada desde cámara: {foto_path}")
+            except Exception as e:
+                print(f"Error al guardar la foto desde cámara: {str(e)}")
+                return render(request, 'personas/registro_paso2.html', {
+                    'error': f'Error al procesar la imagen de la cámara: {str(e)}'
+                })
+        
+        # Si no se guardó ninguna foto, mostrar un error
+        if not foto_guardada:
+            return render(request, 'personas/registro_paso2.html', {
+                'error': 'Por favor, seleccione una imagen o capture una foto con la cámara.'
+            })
+        
+        # Verificar que la foto se guardó correctamente antes de continuar
+        if 'foto_path' in request.session['registro_persona'] and default_storage.exists(request.session['registro_persona']['foto_path']):
+            return redirect('registro_paso3')
+        else:
+            # Si la foto no se guardó correctamente, mostrar un error
+            return render(request, 'personas/registro_paso2.html', {
+                'error': 'No se pudo guardar la foto. Por favor, inténtelo de nuevo.'
+            })
     
     return render(request, 'personas/registro_paso2.html')
-
 @login_required
 def registro_paso3(request):
     """
@@ -204,11 +255,14 @@ def registro_paso3(request):
                 )
                 
                 # Asignar foto si existe
-                if 'foto_path' in datos_persona:
-                    with default_storage.open(datos_persona['foto_path']) as f:
-                        persona.foto.save(f'foto_{persona.nombre}.png', ContentFile(f.read()))
-                    # Eliminar archivo temporal
-                    default_storage.delete(datos_persona['foto_path'])
+                if 'foto_path' in datos_persona and datos_persona['foto_path']:
+                    # Verificar que el archivo existe
+                    if default_storage.exists(datos_persona['foto_path']):
+                        # Mantener el archivo en su ubicación actual (fotos/)
+                        # en lugar de copiarlo a una ubicación temporal
+                        persona.foto = datos_persona['foto_path']
+                    else:
+                        print(f"Advertencia: No se encontró el archivo de foto en {datos_persona['foto_path']}")
                 
                 # Guardar huella y QR
                 persona.huella_digital.save(f'huella_{persona.nombre}.png', huella_content_file)

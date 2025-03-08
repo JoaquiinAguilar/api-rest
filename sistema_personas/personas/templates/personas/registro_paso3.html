@@ -4,9 +4,15 @@
 
 {% block header %}Registro de Nueva Persona - Paso 3: Huella Digital{% endblock %}
 
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fingerprint-styles.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="row">
-    <div class="col-md-8 mx-auto">
+    <div class="col-md-10 mx-auto">
         <div class="card shadow">
             <div class="card-header bg-white">
                 <div class="progress mb-3">
@@ -25,36 +31,73 @@
                                     <i class="fas fa-fingerprint me-2"></i>
                                     <strong>Instrucciones:</strong>
                                     <ol>
-                                        <li>Prepare el lector de huellas digitales.</li>
-                                        <li>Coloque el dedo índice en el lector.</li>
-                                        <li>Suba la imagen capturada o use el botón "Capturar Huella" si el dispositivo está conectado.</li>
+                                        <li>Conecte el lector de huellas digitales.</li>
+                                        <li>Seleccione el lector en la lista desplegable.</li>
+                                        <li>Presione "Iniciar Captura" y coloque su dedo en el lector.</li>
+                                        <li>Una vez capturada la huella, puede continuar con el registro.</li>
                                     </ol>
                                 </div>
                                 
+                                <!-- Selector de dispositivo -->
                                 <div class="mb-3">
-                                    <label for="huella" class="form-label">Seleccionar archivo de huella digital</label>
-                                    <input type="file" class="form-control" id="huella" name="huella" accept="image/*" required>
+                                    <label for="readersDropDown" class="form-label">Lector de huellas:</label>
+                                    <select class="form-control" id="readersDropDown">
+                                        <option value="" selected>Seleccione un lector</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Calidad de escaneo -->
+                                <div class="mb-3" id="scanQualityDiv">
+                                    <label for="qualityInputBox" class="form-label">Calidad del escaneo:</label>
+                                    <input type="text" class="form-control" id="qualityInputBox" readonly>
+                                </div>
+                                
+                                <!-- Botones de control -->
+                                <div class="mb-3">
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-primary" id="btnStartCapture">
+                                            <i class="fas fa-fingerprint me-2"></i>Iniciar Captura
+                                        </button>
+                                        <button type="button" class="btn btn-danger" id="btnStopCapture" disabled>
+                                            <i class="fas fa-stop me-2"></i>Detener Captura
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="btnRefreshReaders">
+                                            <i class="fas fa-sync me-2"></i>Actualizar Lectores
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Campo alternativo de subida de archivo -->
+                                <div class="mb-3">
+                                    <label for="huella" class="form-label">O seleccione un archivo de huella digital</label>
+                                    <input type="file" class="form-control" id="huella" name="huella" accept="image/*">
                                     <div class="form-text">Formatos aceptados: JPG, PNG</div>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <button type="button" id="btnCapturarHuella" class="btn btn-primary w-100">
-                                        <i class="fas fa-fingerprint me-2"></i>Capturar Huella con Lector
-                                    </button>
-                                </div>
+                                <!-- Campos ocultos para almacenar datos -->
+                                <input type="hidden" name="huella_hex" id="huella_hex">
+                                <input type="hidden" name="huella_base64" id="huella_base64">
                             </div>
                         </div>
                         
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Vista previa</label>
-                                <div class="border rounded p-2 d-flex justify-content-center align-items-center bg-light" style="min-height: 200px;">
-                                    <img id="preview" src="#" alt="Vista previa de huella" style="max-width: 100%; max-height: 200px; display: none;">
-                                    <div id="noPreview" class="text-center text-muted">
-                                        <i class="fas fa-fingerprint fa-5x mb-2"></i><br>
-                                        Sin huella capturada
+                                <label class="form-label">Vista previa de la huella</label>
+                                <div class="border rounded p-2 d-flex justify-content-center align-items-center bg-light" style="min-height: 300px;">
+                                    <div id="fingerprint-image-container">
+                                        <div id="imagediv">
+                                            <img id="preview" src="" alt="Vista previa de huella" style="max-width: 100%; max-height: 280px; display: none;">
+                                            <div id="noPreview" class="text-center text-muted">
+                                                <i class="fas fa-fingerprint fa-5x mb-2"></i><br>
+                                                Sin huella capturada
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <div id="captureStatus" class="alert alert-info d-none">
+                                <!-- Mensajes de estado se mostrarán aquí -->
                             </div>
                             
                             <div id="infoHuella" class="alert alert-success" style="display: none;">
@@ -63,6 +106,9 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Estado del proceso -->
+                    <div id="status" class="alert alert-info text-center mt-3 d-none"></div>
                     
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{% url 'registro_paso2' %}" class="btn btn-outline-secondary">
@@ -102,18 +148,35 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- SDK y bibliotecas necesarias para la captura de huellas -->
+<script src="{% static 'js/es6-shim.js' %}"></script>
+<script src="{% static 'js/websdk.client.bundle.min.js' %}"></script>
+<script src="{% static 'js/fingerprint.sdk.min.js' %}"></script>
+
 <script>
+    // Variables globales
+    let fingerprintReader = null;
+    let myReaderVal = "";
+    let acquisitionStarted = false;
+    let currentFormat = Fingerprint.SampleFormat.PngImage;
+    
     document.addEventListener('DOMContentLoaded', function() {
         const inputHuella = document.getElementById('huella');
         const preview = document.getElementById('preview');
         const noPreview = document.getElementById('noPreview');
         const infoHuella = document.getElementById('infoHuella');
-        const btnCapturarHuella = document.getElementById('btnCapturarHuella');
+        const captureStatus = document.getElementById('captureStatus');
+        const huellaHexInput = document.getElementById('huella_hex');
+        const huellaBase64Input = document.getElementById('huella_base64');
+        const btnFinalizar = document.getElementById('btnFinalizar');
         const formPaso3 = document.getElementById('formPaso3');
         const confirmacionModal = new bootstrap.Modal(document.getElementById('confirmacionModal'));
         const btnConfirmarFinalizacion = document.getElementById('btnConfirmarFinalizacion');
         
-        // Vista previa de huella seleccionada
+        // Inicializar SDK de huellas digitales
+        initFingerprintCapture();
+        
+        // Vista previa de huella seleccionada manualmente
         inputHuella.addEventListener('change', function() {
             const file = this.files[0];
             if (file) {
@@ -123,66 +186,33 @@
                     preview.style.display = 'block';
                     noPreview.style.display = 'none';
                     infoHuella.style.display = 'block';
+                    
+                    // Extraer la parte base64 de la URL de datos
+                    const base64String = e.target.result.split(',')[1];
+                    huellaBase64Input.value = base64String;
+                    
+                    // Calcular el hash SHA-256
+                    calculateSHA256(base64String).then(hash => {
+                        huellaHexInput.value = hash;
+                    });
                 }
                 reader.readAsDataURL(file);
             } else {
                 preview.style.display = 'none';
                 noPreview.style.display = 'block';
                 infoHuella.style.display = 'none';
+                huellaHexInput.value = '';
+                huellaBase64Input.value = '';
             }
         });
         
-        // Simular captura de huella con lector
-        btnCapturarHuella.addEventListener('click', function() {
-            // Aquí se implementaría la integración con el lector real de huellas
-            // Por ahora, simulamos una respuesta exitosa
-            capturarHuellaSimulada();
-        });
-        
-        function capturarHuellaSimulada() {
-            btnCapturarHuella.disabled = true;
-            btnCapturarHuella.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Capturando...';
-            
-            // Simulamos un tiempo de captura
-            setTimeout(function() {
-                btnCapturarHuella.innerHTML = '<i class="fas fa-fingerprint me-2"></i>Capturar Huella con Lector';
-                btnCapturarHuella.disabled = false;
-                
-                // URL de una imagen de huella de ejemplo (en producción sería la imagen real capturada)
-                fetch('/static/img/fingerprint-example.png')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('No se pudo cargar la imagen de ejemplo');
-                        }
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        // Crear un objeto File a partir del Blob
-                        const file = new File([blob], "huella_capturada.png", { type: "image/png" });
-                        
-                        // Crear un nuevo objeto FileList para el input de archivo
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(file);
-                        inputHuella.files = dataTransfer.files;
-                        
-                        // Disparar el evento change para mostrar la vista previa
-                        const event = new Event('change', { bubbles: true });
-                        inputHuella.dispatchEvent(event);
-                    })
-                    .catch(error => {
-                        console.error('Error al cargar huella de ejemplo:', error);
-                        alert('Error al capturar huella. Por favor, suba un archivo manualmente.');
-                    });
-            }, 2000);
-        }
-        
         // Mostrar modal de confirmación antes de enviar
-        document.getElementById('btnFinalizar').addEventListener('click', function(event) {
+        btnFinalizar.addEventListener('click', function(event) {
             event.preventDefault();
             
-            // Verificar si se ha seleccionado una huella
-            if (inputHuella.files.length === 0) {
-                alert('Por favor, seleccione o capture una huella digital antes de continuar.');
+            // Verificar si se ha capturado una huella
+            if (!huellaHexInput.value || !huellaBase64Input.value) {
+                showCaptureStatus('Por favor, capture una huella digital antes de continuar.', 'danger');
                 return;
             }
             
@@ -195,15 +225,278 @@
             formPaso3.submit();
         });
         
-        // Comunicación con la API del lector de huellas
-        function conectarConLectorHuellas() {
-            // Esta función se conectaría con la API real del lector de huellas
-            // Implementación real dependería del dispositivo y API específicos
-            console.log("Conectando con lector de huellas...");
+        // Inicializar captura de huellas
+        function initFingerprintCapture() {
+            // Crear instancia del SDK
+            fingerprintReader = new FingerprintCapture();
+            
+            // Populate readers dropdown
+            populateReadersDropDown();
+            
+            // Asignar eventos a los botones
+            document.getElementById('btnStartCapture').addEventListener('click', startCapture);
+            document.getElementById('btnStopCapture').addEventListener('click', stopCapture);
+            document.getElementById('btnRefreshReaders').addEventListener('click', populateReadersDropDown);
+            document.getElementById('readersDropDown').addEventListener('change', onReaderSelected);
         }
         
-        // Intenta conectar al cargar la página
-        conectarConLectorHuellas();
+        /**
+         * Clase principal de captura de huellas
+         */
+        function FingerprintCapture() {
+            const _instance = this;
+            this.acquisitionStarted = false;
+            this.sdk = new Fingerprint.WebApi;
+            
+            // Configurar eventos del SDK
+            this.sdk.onDeviceConnected = function(e) {
+                showStatus("Dispositivo conectado. Coloque su dedo en el lector.");
+                showCaptureStatus("Lector listo. Coloque su dedo en el lector.", "info");
+            };
+            
+            this.sdk.onDeviceDisconnected = function(e) {
+                showStatus("Dispositivo desconectado.");
+                showCaptureStatus("El lector ha sido desconectado. Por favor, reconecte el dispositivo.", "warning");
+                _instance.acquisitionStarted = false;
+                updateButtonState();
+            };
+            
+            this.sdk.onCommunicationFailed = function(e) {
+                showStatus("Error de comunicación con el SDK.");
+                showCaptureStatus("Ha ocurrido un error de comunicación con el lector. Intente nuevamente.", "danger");
+                _instance.acquisitionStarted = false;
+                updateButtonState();
+            };
+            
+            this.sdk.onSamplesAcquired = function(s) {
+                processFingerprintSample(s);
+            };
+            
+            this.sdk.onQualityReported = function(e) {
+                document.getElementById("qualityInputBox").value = Fingerprint.QualityCode[(e.quality)];
+            };
+            
+            // Iniciar captura de huella
+            this.startAcquisition = function() {
+                if (this.acquisitionStarted) return;
+                
+                showStatus("");
+                
+                this.sdk.startAcquisition(currentFormat, myReaderVal).then(function() {
+                    _instance.acquisitionStarted = true;
+                    acquisitionStarted = true;
+                    updateButtonState();
+                    showCaptureStatus("Captura iniciada. Coloque su dedo en el lector.", "info");
+                }, function(error) {
+                    showStatus(error.message);
+                    showCaptureStatus("Error al iniciar la captura: " + error.message, "danger");
+                });
+            };
+            
+            // Detener captura de huella
+            this.stopAcquisition = function() {
+                if (!this.acquisitionStarted) return;
+                
+                showStatus("");
+                
+                this.sdk.stopAcquisition().then(function() {
+                    _instance.acquisitionStarted = false;
+                    acquisitionStarted = false;
+                    updateButtonState();
+                    showCaptureStatus("Captura detenida.", "warning");
+                }, function(error) {
+                    showStatus(error.message);
+                    showCaptureStatus("Error al detener la captura: " + error.message, "danger");
+                });
+            };
+            
+            // Enumerar dispositivos disponibles
+            this.enumerateDevices = function() {
+                return this.sdk.enumerateDevices();
+            };
+            
+            // Obtener información del dispositivo
+            this.getDeviceInfo = function(uid) {
+                return this.sdk.getDeviceInfo(uid);
+            };
+        }
+        
+        /**
+         * Procesa las muestras de huellas digitales adquiridas
+         */
+        function processFingerprintSample(sample) {
+            try {
+                if (currentFormat === Fingerprint.SampleFormat.PngImage) {
+                    // Procesando imagen PNG
+                    const samples = JSON.parse(sample.samples);
+                    const base64Data = Fingerprint.b64UrlTo64(samples[0]);
+                    const imageSrc = "data:image/png;base64," + base64Data;
+                    
+                    // Mostrar la imagen
+                    preview.src = imageSrc;
+                    preview.style.display = 'block';
+                    noPreview.style.display = 'none';
+                    infoHuella.style.display = 'block';
+                    
+                    // Guardar la imagen en el formulario para enviar
+                    huellaBase64Input.value = base64Data;
+                    
+                    // Calcular el hash SHA-256 de la imagen
+                    calculateSHA256(base64Data).then(hash => {
+                        huellaHexInput.value = hash;
+                        showCaptureStatus("Huella capturada correctamente", "success");
+                    });
+                }
+            } catch (error) {
+                console.error("Error al procesar la muestra de huella:", error);
+                showCaptureStatus("Error al procesar la huella digital: " + error.message, "danger");
+            }
+        }
+        
+        /**
+         * Calcula el hash SHA-256 de los datos de la imagen
+         */
+        async function calculateSHA256(base64Data) {
+            try {
+                // Convertir base64 a array de bytes
+                const binaryString = window.atob(base64Data);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // Usar Crypto API para calcular hash
+                const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+                
+                // Convertir buffer a cadena hexadecimal
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                return hashHex;
+            } catch (error) {
+                console.error("Error al calcular hash SHA-256:", error);
+                return null;
+            }
+        }
+        
+        /**
+         * Actualiza el estado de los botones de acuerdo al estado de la captura
+         */
+        function updateButtonState() {
+            const startButton = document.getElementById('btnStartCapture');
+            const stopButton = document.getElementById('btnStopCapture');
+            
+            if (acquisitionStarted) {
+                startButton.disabled = true;
+                stopButton.disabled = false;
+            } else {
+                startButton.disabled = !myReaderVal;
+                stopButton.disabled = true;
+            }
+        }
+        
+        /**
+         * Inicia la captura de huella
+         */
+        function startCapture() {
+            if (!myReaderVal) {
+                showCaptureStatus("Por favor, seleccione un lector de huellas primero.", "warning");
+                return;
+            }
+            
+            fingerprintReader.startAcquisition();
+        }
+        
+        /**
+         * Detiene la captura de huella
+         */
+        function stopCapture() {
+            fingerprintReader.stopAcquisition();
+        }
+        
+        /**
+         * Popula el dropdown con los lectores disponibles
+         */
+        function populateReadersDropDown() {
+            myReaderVal = "";
+            const allReaders = fingerprintReader.enumerateDevices();
+            
+            allReaders.then(function(readers) {
+                const dropdown = document.getElementById("readersDropDown");
+                dropdown.innerHTML = "";
+                
+                // Primer elemento (por defecto)
+                const defaultOption = document.createElement("option");
+                defaultOption.selected = "selected";
+                defaultOption.value = "";
+                defaultOption.text = "Seleccione un lector";
+                dropdown.add(defaultOption);
+                
+                // Añadir lectores encontrados
+                for (let i = 0; i < readers.length; i++) {
+                    const option = document.createElement("option");
+                    option.value = readers[i];
+                    option.text = 'Digital Persona (' + readers[i] + ')';
+                    dropdown.add(option);
+                }
+                
+                // Si no hay lectores, mostrar mensaje de alerta
+                if (readers.length === 0) {
+                    showCaptureStatus("No se ha detectado ningún lector de huellas. Por favor, conecte un dispositivo.", "warning");
+                } else if (readers.length === 1) {
+                    // Si solo hay un lector, seleccionarlo automáticamente
+                    dropdown.selectedIndex = 1;
+                    onReaderSelected();
+                }
+                
+                updateButtonState();
+                
+            }, function(error) {
+                showStatus(error.message);
+                showCaptureStatus("Error al buscar lectores de huellas: " + error.message, "danger");
+            });
+        }
+        
+        /**
+         * Manejador del cambio de selección del lector
+         */
+        function onReaderSelected() {
+            const dropdown = document.getElementById("readersDropDown");
+            myReaderVal = dropdown.options[dropdown.selectedIndex].value;
+            updateButtonState();
+            
+            // Si se seleccionó un lector, mostrar mensaje informativo
+            if (myReaderVal) {
+                showCaptureStatus("Lector seleccionado. Presione 'Iniciar Captura' para comenzar.", "info");
+            }
+        }
+        
+        /**
+         * Muestra un mensaje de estado
+         */
+        function showStatus(message) {
+            const status = document.getElementById('status');
+            if (status) {
+                if (message) {
+                    status.innerHTML = message;
+                    status.classList.remove('d-none');
+                } else {
+                    status.classList.add('d-none');
+                }
+            }
+        }
+        
+        /**
+         * Muestra un mensaje en el contenedor de estado de captura
+         */
+        function showCaptureStatus(message, type) {
+            if (captureStatus) {
+                captureStatus.innerHTML = message;
+                captureStatus.className = 'alert alert-' + type;
+                captureStatus.classList.remove('d-none');
+            }
+        }
     });
 </script>
 {% endblock %}

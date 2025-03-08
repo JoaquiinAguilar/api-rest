@@ -1,7 +1,7 @@
 from django import forms
 from django.core.validators import RegexValidator
 from .models import Persona
-
+#cambio de rama
 class PersonaForm(forms.ModelForm):
     """Formulario para el modelo Persona"""
     

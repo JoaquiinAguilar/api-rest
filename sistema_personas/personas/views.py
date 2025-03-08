@@ -16,6 +16,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 import json
 import base64
+import qrcode
+import hashlib
 from io import BytesIO
 from PIL import Image
 

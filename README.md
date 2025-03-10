@@ -1,6 +1,7 @@
 # API-REST-PERSONAS
 Una API REST sencilla que permita crear, leer, actualizar y eliminar (CRUD) personas en una base de datos
 
+# Basado en Django Framework
 
 Funcionalidades:
 
@@ -13,6 +14,7 @@ Funcionalidades:
 - Registro de datos generales de Ia persona, debe incluir fotografía y huella biométrica, dividir la captura en diferentes ventanas, aplicar validaciones con ayuda de mensajes al usuario por cada una de las ventanas 
 según el avance en la captura.
 
+Sensor de huellas Digital Persona SDK
 
 # ¿Como hacerlo funcionar?
 Leer installation.md

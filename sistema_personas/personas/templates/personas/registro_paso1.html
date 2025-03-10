@@ -67,10 +67,96 @@
                         <div class="invalid-feedback">Por favor ingrese un correo electrónico válido.</div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="direccion" class="form-label">Dirección <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="direccion" name="direccion" rows="3" required>{{ request.session.registro_persona.direccion|default:'' }}</textarea>
-                        <div class="invalid-feedback">Por favor ingrese la dirección.</div>
+                    <!-- Nuevos campos de dirección con autocompletado y edición manual -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Dirección <span class="text-danger">*</span></h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="codigo_postal" class="form-label">Código Postal</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="codigo_postal" name="codigo_postal" 
+                                               pattern="[0-9]{5}" title="Ingrese un código postal válido de 5 dígitos"
+                                               value="{{ request.session.registro_persona.codigo_postal|default:'' }}">
+                                        <button class="btn btn-outline-secondary" type="button" id="buscarCP">
+                                            <i class="fas fa-search"></i> Buscar
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Opcional. Si ingresa un código postal y presiona Buscar, los campos siguientes se completarán automáticamente.</div>
+                                    <div id="cp_loading" class="form-text d-none">
+                                        <i class="fas fa-spinner fa-spin"></i> Buscando información del código postal...
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="estado" name="estado" required>
+                                        <option value="">Seleccione un estado</option>
+                                        <option value="Aguascalientes" {% if request.session.registro_persona.estado == "Aguascalientes" %}selected{% endif %}>Aguascalientes</option>
+                                        <option value="Baja California" {% if request.session.registro_persona.estado == "Baja California" %}selected{% endif %}>Baja California</option>
+                                        <option value="Baja California Sur" {% if request.session.registro_persona.estado == "Baja California Sur" %}selected{% endif %}>Baja California Sur</option>
+                                        <option value="Campeche" {% if request.session.registro_persona.estado == "Campeche" %}selected{% endif %}>Campeche</option>
+                                        <option value="Chiapas" {% if request.session.registro_persona.estado == "Chiapas" %}selected{% endif %}>Chiapas</option>
+                                        <option value="Chihuahua" {% if request.session.registro_persona.estado == "Chihuahua" %}selected{% endif %}>Chihuahua</option>
+                                        <option value="Ciudad de México" {% if request.session.registro_persona.estado == "Ciudad de México" %}selected{% endif %}>Ciudad de México</option>
+                                        <option value="Coahuila" {% if request.session.registro_persona.estado == "Coahuila" %}selected{% endif %}>Coahuila</option>
+                                        <option value="Colima" {% if request.session.registro_persona.estado == "Colima" %}selected{% endif %}>Colima</option>
+                                        <option value="Durango" {% if request.session.registro_persona.estado == "Durango" %}selected{% endif %}>Durango</option>
+                                        <option value="Estado de México" {% if request.session.registro_persona.estado == "Estado de México" %}selected{% endif %}>Estado de México</option>
+                                        <option value="Guanajuato" {% if request.session.registro_persona.estado == "Guanajuato" %}selected{% endif %}>Guanajuato</option>
+                                        <option value="Guerrero" {% if request.session.registro_persona.estado == "Guerrero" %}selected{% endif %}>Guerrero</option>
+                                        <option value="Hidalgo" {% if request.session.registro_persona.estado == "Hidalgo" %}selected{% endif %}>Hidalgo</option>
+                                        <option value="Jalisco" {% if request.session.registro_persona.estado == "Jalisco" %}selected{% endif %}>Jalisco</option>
+                                        <option value="Michoacán" {% if request.session.registro_persona.estado == "Michoacán" %}selected{% endif %}>Michoacán</option>
+                                        <option value="Morelos" {% if request.session.registro_persona.estado == "Morelos" %}selected{% endif %}>Morelos</option>
+                                        <option value="Nayarit" {% if request.session.registro_persona.estado == "Nayarit" %}selected{% endif %}>Nayarit</option>
+                                        <option value="Nuevo León" {% if request.session.registro_persona.estado == "Nuevo León" %}selected{% endif %}>Nuevo León</option>
+                                        <option value="Oaxaca" {% if request.session.registro_persona.estado == "Oaxaca" %}selected{% endif %}>Oaxaca</option>
+                                        <option value="Puebla" {% if request.session.registro_persona.estado == "Puebla" %}selected{% endif %}>Puebla</option>
+                                        <option value="Querétaro" {% if request.session.registro_persona.estado == "Querétaro" %}selected{% endif %}>Querétaro</option>
+                                        <option value="Quintana Roo" {% if request.session.registro_persona.estado == "Quintana Roo" %}selected{% endif %}>Quintana Roo</option>
+                                        <option value="San Luis Potosí" {% if request.session.registro_persona.estado == "San Luis Potosí" %}selected{% endif %}>San Luis Potosí</option>
+                                        <option value="Sinaloa" {% if request.session.registro_persona.estado == "Sinaloa" %}selected{% endif %}>Sinaloa</option>
+                                        <option value="Sonora" {% if request.session.registro_persona.estado == "Sonora" %}selected{% endif %}>Sonora</option>
+                                        <option value="Tabasco" {% if request.session.registro_persona.estado == "Tabasco" %}selected{% endif %}>Tabasco</option>
+                                        <option value="Tamaulipas" {% if request.session.registro_persona.estado == "Tamaulipas" %}selected{% endif %}>Tamaulipas</option>
+                                        <option value="Tlaxcala" {% if request.session.registro_persona.estado == "Tlaxcala" %}selected{% endif %}>Tlaxcala</option>
+                                        <option value="Veracruz" {% if request.session.registro_persona.estado == "Veracruz" %}selected{% endif %}>Veracruz</option>
+                                        <option value="Yucatán" {% if request.session.registro_persona.estado == "Yucatán" %}selected{% endif %}>Yucatán</option>
+                                        <option value="Zacatecas" {% if request.session.registro_persona.estado == "Zacatecas" %}selected{% endif %}>Zacatecas</option>
+                                    </select>
+                                    <div class="invalid-feedback">Por favor seleccione un estado.</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="municipio" class="form-label">Municipio/Alcaldía <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="municipio" name="municipio" required
+                                           value="{{ request.session.registro_persona.municipio|default:'' }}">
+                                    <div class="invalid-feedback">Por favor ingrese el municipio o alcaldía.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="colonia" class="form-label">Colonia <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="colonia" name="colonia" required
+                                           value="{{ request.session.registro_persona.colonia|default:'' }}">
+                                    <div class="invalid-feedback">Por favor ingrese la colonia.</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="calle_numero" class="form-label">Calle y Número <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="calle_numero" name="calle_numero" required
+                                       value="{{ request.session.registro_persona.calle_numero|default:'' }}"
+                                       placeholder="Ej. Av. Insurgentes Sur 123, Int. 4">
+                                <div class="invalid-feedback">Por favor ingrese la calle y número.</div>
+                            </div>
+                            
+                            <!-- Campo oculto para almacenar la dirección completa -->
+                            <input type="hidden" id="direccion" name="direccion" 
+                                   value="{{ request.session.registro_persona.direccion|default:'' }}">
+                        </div>
                     </div>
                     
                     <div class="d-flex justify-content-between mt-4">
@@ -86,6 +172,26 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para sugerencias de colonias -->
+<div class="modal fade" id="coloniasModal" tabindex="-1" aria-labelledby="coloniasModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="coloniasModalLabel">Seleccione una colonia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group" id="listColonias">
+                    <!-- Las colonias se cargarán aquí -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -93,14 +199,189 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Validación del formulario
         const form = document.getElementById('formPaso1');
+        const cpInput = document.getElementById('codigo_postal');
+        const buscarCPBtn = document.getElementById('buscarCP');
+        const estadoSelect = document.getElementById('estado');
+        const municipioInput = document.getElementById('municipio');
+        const coloniaInput = document.getElementById('colonia');
+        const calleNumeroInput = document.getElementById('calle_numero');
+        const direccionHidden = document.getElementById('direccion');
+        const cpLoading = document.getElementById('cp_loading');
         
+        // Modal de colonias
+        const coloniasModal = new bootstrap.Modal(document.getElementById('coloniasModal'), {});
+        const listColonias = document.getElementById('listColonias');
+        
+        // Función para actualizar el campo oculto de dirección completa
+        function actualizarDireccionCompleta() {
+            const estado = estadoSelect.value;
+            const municipio = municipioInput.value;
+            const colonia = coloniaInput.value;
+            const calleNumero = calleNumeroInput.value;
+            const cp = cpInput.value;
+            
+            if (estado && municipio && colonia && calleNumero) {
+                let direccionCompleta = `${calleNumero}, ${colonia}, ${municipio}, ${estado}`;
+                if (cp) {
+                    direccionCompleta += `, C.P. ${cp}`;
+                }
+                direccionHidden.value = direccionCompleta;
+            }
+        }
+        
+        // Función para buscar información por código postal
+        function buscarCodigoPostal() {
+            const cp = cpInput.value.trim();
+            if (cp.length === 5 && /^\d{5}$/.test(cp)) {
+                // Mostrar indicador de carga
+                cpLoading.classList.remove('d-none');
+                
+                // Usar API gratuita de códigos postales
+                fetch(`https://api.zippopotam.us/mx/${cp}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('No se encontró información para este código postal');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.places && data.places.length > 0) {
+                            // Actualizar municipio
+                            municipioInput.value = data.places[0][''] || '';
+                            
+                            // Seleccionar estado
+                            const estado = data.places[0]['state'];
+                            for (let i = 0; i < estadoSelect.options.length; i++) {
+                                if (estadoSelect.options[i].text === estado) {
+                                    estadoSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                            
+                            // Si hay varias colonias, mostrar modal para elegir
+                            if (data.places.length > 1) {
+                                // Llenar lista de colonias
+                                listColonias.innerHTML = '';
+                                data.places.forEach(place => {
+                                    const item = document.createElement('button');
+                                    item.type = 'button';
+                                    item.className = 'list-group-item list-group-item-action';
+                                    item.textContent = place['place name'];
+                                    item.onclick = function() {
+                                        coloniaInput.value = place['place name'];
+                                        coloniasModal.hide();
+                                        actualizarDireccionCompleta();
+                                    };
+                                    listColonias.appendChild(item);
+                                });
+                                
+                                // Mostrar modal
+                                coloniasModal.show();
+                            } else {
+                                // Si solo hay una colonia, asignarla directamente
+                                coloniaInput.value = data.places[0]['place name'] || '';
+                            }
+                            
+                            actualizarDireccionCompleta();
+                        } else {
+                            throw new Error('Datos incompletos para este código postal');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener datos:', error);
+                        
+                        // Intentar con API alternativa
+                        fetch(`https://api-sepomex.hckdrk.mx/query/info_cp/${cp}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.error === false && data.response.cp) {
+                                    // Seleccionar estado
+                                    const estado = data.response.estado;
+                                    for (let i = 0; i < estadoSelect.options.length; i++) {
+                                        if (estadoSelect.options[i].text === estado) {
+                                            estadoSelect.selectedIndex = i;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // Actualizar municipio
+                                    municipioInput.value = data.response.municipio || '';
+                                    
+                                    // Manejar colonias
+                                    if (data.response.asentamiento && Array.isArray(data.response.asentamiento) && data.response.asentamiento.length > 0) {
+                                        if (data.response.asentamiento.length > 1) {
+                                            // Mostrar modal para elegir colonia
+                                            listColonias.innerHTML = '';
+                                            data.response.asentamiento.forEach(colonia => {
+                                                const item = document.createElement('button');
+                                                item.type = 'button';
+                                                item.className = 'list-group-item list-group-item-action';
+                                                item.textContent = colonia;
+                                                item.onclick = function() {
+                                                    coloniaInput.value = colonia;
+                                                    coloniasModal.hide();
+                                                    actualizarDireccionCompleta();
+                                                };
+                                                listColonias.appendChild(item);
+                                            });
+                                            
+                                            coloniasModal.show();
+                                        } else {
+                                            // Si solo hay una colonia, asignarla directamente
+                                            coloniaInput.value = data.response.asentamiento[0] || '';
+                                        }
+                                    } else if (typeof data.response.asentamiento === 'string') {
+                                        // Si es solo un string
+                                        coloniaInput.value = data.response.asentamiento;
+                                    }
+                                    
+                                    actualizarDireccionCompleta();
+                                } else {
+                                    throw new Error('No se encontraron datos con la API alternativa');
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Error en API alternativa:', err);
+                                alert('No se pudo encontrar información para este código postal. Por favor, ingrese los datos manualmente.');
+                            });
+                    })
+                    .finally(() => {
+                        cpLoading.classList.add('d-none');
+                    });
+            } else {
+                alert('Por favor, ingrese un código postal válido de 5 dígitos.');
+            }
+        }
+        
+        // Evento para botón de búsqueda
+        buscarCPBtn.addEventListener('click', buscarCodigoPostal);
+        
+        // También buscar al presionar Enter en el campo de código postal
+        cpInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Evitar envío del formulario
+                buscarCodigoPostal();
+            }
+        });
+        
+        // Actualizar dirección completa cuando cambian los datos
+        estadoSelect.addEventListener('change', actualizarDireccionCompleta);
+        municipioInput.addEventListener('input', actualizarDireccionCompleta);
+        coloniaInput.addEventListener('input', actualizarDireccionCompleta);
+        calleNumeroInput.addEventListener('input', actualizarDireccionCompleta);
+        cpInput.addEventListener('input', actualizarDireccionCompleta);
+        
+        // Validación del formulario al enviar
         form.addEventListener('submit', function(event) {
+            // Actualizar dirección completa antes de enviar
+            actualizarDireccionCompleta();
+            
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
                 
                 // Mostrar mensajes de error
-                const inputs = form.querySelectorAll('input, textarea');
+                const inputs = form.querySelectorAll('input, textarea, select');
                 inputs.forEach(input => {
                     if (!input.checkValidity()) {
                         input.classList.add('is-invalid');
@@ -114,7 +395,7 @@
         });
         
         // Quitar clase de inválido al editar
-        const inputs = form.querySelectorAll('input, textarea');
+        const inputs = form.querySelectorAll('input, textarea, select');
         inputs.forEach(input => {
             input.addEventListener('input', function() {
                 if (this.checkValidity()) {
@@ -122,6 +403,12 @@
                 }
             });
         });
+        
+        // Inicializar dirección completa si ya existen datos
+        if (estadoSelect.value && municipioInput.value && 
+            coloniaInput.value && calleNumeroInput.value) {
+            actualizarDireccionCompleta();
+        }
     });
 </script>
 {% endblock %}

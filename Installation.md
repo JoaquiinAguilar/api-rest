@@ -3,10 +3,10 @@
 
 1. Clone the repo
     ```sh
-        git clone https://github.com/JoaquiinAguilar/API-REST-PERSONAS.git
+        git clone https://github.com/JoaquiinAguilar/api-rest
     ```
 2. Access into the folder 
-    `cd personas_proyecto`
+    `cd sistema_personas`
 3. Create an virtual environment 
     `python -m venv .env`
 4. Activate the virtual environment 

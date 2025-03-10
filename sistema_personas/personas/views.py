@@ -103,14 +103,20 @@ class PersonaListView(LoginRequiredMixin, ListView):
 @login_required
 def registro_paso1(request):
     if request.method == 'POST':
-        # Guardar datos básicos en sesión
+        # Guardar datos básicos en sesión, incluyendo los nuevos campos de dirección
         request.session['registro_persona'] = {
             'nombre': request.POST.get('nombre'),
             'apellidos': request.POST.get('apellidos'),
             'sexo': request.POST.get('sexo') == '1',
             'telefono': request.POST.get('telefono'),
             'correo': request.POST.get('correo'),
-            'direccion': request.POST.get('direccion')
+            'direccion': request.POST.get('direccion'),
+            # Guardar también los campos individuales para mostrarlos en caso de edición
+            'codigo_postal': request.POST.get('codigo_postal'),
+            'estado': request.POST.get('estado'),
+            'municipio': request.POST.get('municipio'),
+            'colonia': request.POST.get('colonia'),
+            'calle_numero': request.POST.get('calle_numero')
         }
         return redirect('registro_paso2')
     
@@ -131,21 +137,35 @@ def registro_paso2(request):
         # Verificar si se ha cargado un archivo
         if 'foto' in request.FILES and request.FILES['foto']:
             try:
-                # Guardar foto directamente en la carpeta fotos (no en temp)
+                # Guardar el archivo físicamente para verificar después
+                from django.core.files.storage import FileSystemStorage
                 import os
                 from django.conf import settings
                 
-                # Asegurarse de que el directorio existe
+                # Crear directorio si no existe
                 os.makedirs(os.path.join(settings.MEDIA_ROOT, 'fotos'), exist_ok=True)
                 
+                # Guardar el archivo directamente
                 foto = request.FILES['foto']
-                foto_content = foto.read()
                 
-                # Guardar en fotos/ con un nombre único
-                foto_path = default_storage.save(f'fotos/foto_{request.user.id}_{foto.name}', ContentFile(foto_content))
-                request.session['registro_persona']['foto_path'] = foto_path
+                # Guardar el archivo en memoria para usarlo en paso 3
+                request.session['registro_persona']['foto_temp'] = {
+                    'nombre': foto.name,
+                    'content_type': foto.content_type,
+                    'size': foto.size
+                }
+                
+                # También guardamos una copia en disco para respaldo
+                fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'fotos'))
+                filename = fs.save(f"temp_{request.user.id}_{foto.name}", foto)
+                
+                # Guardar la información en la sesión
+                request.session['registro_persona']['foto_path'] = os.path.join('fotos', filename)
+                request.session.modified = True  # Forzar actualización de la sesión
+                
                 foto_guardada = True
-                print(f"Foto guardada desde archivo: {foto_path}")
+                print(f"Foto cargada desde archivo y guardada en: {request.session['registro_persona']['foto_path']}")
+                
             except Exception as e:
                 print(f"Error al guardar la foto desde archivo: {str(e)}")
                 return render(request, 'personas/registro_paso2.html', {
@@ -159,17 +179,32 @@ def registro_paso2(request):
                 img_data = request.POST.get('foto_base64').split(',')[1]
                 img_binary = base64.b64decode(img_data)
                 
-                # Asegurarse de que el directorio existe
+                # Guardar en disco para respaldo
+                from django.core.files.storage import FileSystemStorage
                 import os
+                import uuid
                 from django.conf import settings
+                
+                # Crear directorio si no existe
                 os.makedirs(os.path.join(settings.MEDIA_ROOT, 'fotos'), exist_ok=True)
                 
-                # Guardar la imagen decodificada directamente en fotos/ (no en temp)
-                import uuid
-                foto_path = default_storage.save(f'fotos/foto_{request.user.id}_{uuid.uuid4()}.png', ContentFile(img_binary))
-                request.session['registro_persona']['foto_path'] = foto_path
+                # Guardar la imagen con un nombre único
+                filename = f"temp_camera_{request.user.id}_{uuid.uuid4()}.png"
+                fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'fotos'))
+                
+                # Guardamos archivo en disco
+                from django.core.files.base import ContentFile
+                temp_file = ContentFile(img_binary)
+                filename = fs.save(filename, temp_file)
+                
+                # Guardar la información en la sesión
+                request.session['registro_persona']['foto_path'] = os.path.join('fotos', filename)
+                request.session['registro_persona']['foto_from_camera'] = True
+                request.session.modified = True  # Forzar actualización de la sesión
+                
                 foto_guardada = True
-                print(f"Foto guardada desde cámara: {foto_path}")
+                print(f"Foto capturada desde cámara y guardada en: {request.session['registro_persona']['foto_path']}")
+                
             except Exception as e:
                 print(f"Error al guardar la foto desde cámara: {str(e)}")
                 return render(request, 'personas/registro_paso2.html', {
@@ -182,8 +217,9 @@ def registro_paso2(request):
                 'error': 'Por favor, seleccione una imagen o capture una foto con la cámara.'
             })
         
-        # Verificar que la foto se guardó correctamente antes de continuar
-        if 'foto_path' in request.session['registro_persona'] and default_storage.exists(request.session['registro_persona']['foto_path']):
+        # Verificar que la información se guardó en la sesión
+        if 'foto_path' in request.session['registro_persona']:
+            print(f"Avanzando al paso 3 con foto_path: {request.session['registro_persona']['foto_path']}")
             return redirect('registro_paso3')
         else:
             # Si la foto no se guardó correctamente, mostrar un error
@@ -192,6 +228,7 @@ def registro_paso2(request):
             })
     
     return render(request, 'personas/registro_paso2.html')
+
 @login_required
 def registro_paso3(request):
     """
@@ -202,6 +239,11 @@ def registro_paso3(request):
     """
     if 'registro_persona' not in request.session:
         return redirect('registro_paso1')
+    
+    # Obtener datos de la sesión para depuración
+    datos_persona = request.session.get('registro_persona', {})
+    if 'foto_path' in datos_persona:
+        print(f"En paso3, foto_path: {datos_persona['foto_path']}")
     
     if request.method == 'POST':
         # Verificar si se recibió la huella digital
@@ -254,21 +296,46 @@ def registro_paso3(request):
                     huella_hex=huella_hex
                 )
                 
-                # Asignar foto si existe
+                # MÉTODO MEJORADO: Asignar foto si existe
                 if 'foto_path' in datos_persona and datos_persona['foto_path']:
-                    # Verificar que el archivo existe
-                    if default_storage.exists(datos_persona['foto_path']):
-                        # Mantener el archivo en su ubicación actual (fotos/)
-                        # en lugar de copiarlo a una ubicación temporal
-                        persona.foto = datos_persona['foto_path']
+                    import os
+                    from django.conf import settings
+                    from django.core.files import File
+                    
+                    # La ruta completa al archivo
+                    ruta_completa = os.path.join(settings.MEDIA_ROOT, datos_persona['foto_path'])
+                    
+                    if os.path.exists(ruta_completa):
+                        try:
+                            with open(ruta_completa, 'rb') as f:
+                                # Crear un nombre para la foto final basado en el nombre de la persona
+                                nombre_foto_final = f"foto_{persona.nombre}_{persona.apellidos.split()[0]}.jpg"
+                                
+                                # Guardar el archivo con un nuevo nombre
+                                persona.foto.save(nombre_foto_final, File(f), save=False)
+                                
+                                print(f"Foto asignada al modelo desde {ruta_completa}")
+                            
+                            # NUEVO: Eliminar el archivo temporal
+                            try:
+                                os.remove(ruta_completa)
+                                print(f"Archivo temporal eliminado: {ruta_completa}")
+                            except Exception as e:
+                                print(f"Error al eliminar archivo temporal: {e}")
+                        
+                        except Exception as e:
+                            print(f"Error al procesar foto: {e}")
+                            # Opcional: manejar el error si no se puede abrir/procesar el archivo
                     else:
-                        print(f"Advertencia: No se encontró el archivo de foto en {datos_persona['foto_path']}")
+                        print(f"Advertencia: No se encontró el archivo de foto en {ruta_completa}")
                 
                 # Guardar huella y QR
                 persona.huella_digital.save(f'huella_{persona.nombre}.png', huella_content_file)
                 persona.qr_code.save(f'qr_{persona.nombre}.png', qr_content)
                 
+                print("Guardando persona en la base de datos...")
                 persona.save()
+                print(f"Persona guardada. ID: {persona.id}, Foto: {persona.foto}")
                 
                 # Limpiar sesión
                 del request.session['registro_persona']
